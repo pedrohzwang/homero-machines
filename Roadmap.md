@@ -215,32 +215,33 @@ maquinas-app/
 **Objetivo:** Dentro de cada máquina, o usuário gerencia as peças necessárias com nome, quantidade, peso e fotos.
 
 ### Banco de dados
-- [ ] Peças são armazenadas no campo `parts` (JSON) da tabela `machines` — não há tabela separada
+- [x] Peças são armazenadas no campo `parts` (JSON) da tabela `machines` — não há tabela separada
 - [x] `updateMachine(id, { parts: [...] })` já implementado e pronto para uso
-- [ ] IDs de peças gerados no cliente (sem crypto.randomUUID — usar Date.now()+Math.random() conforme fileSystem.ts)
+- [x] IDs de peças gerados no cliente (sem crypto.randomUUID — usar Date.now()+Math.random() conforme fileSystem.ts)
 
 ### Armazenamento de fotos de peças
-- [ ] Mesma lógica da Fase 1 (pasta `photos/` dentro de `FileSystem.documentDirectory/my-machines/`)
-- [ ] Ao deletar uma peça, excluir os arquivos de foto referenciados
+- [x] Mesma lógica da Fase 1 (pasta `photos/` dentro de `FileSystem.documentDirectory/my-machines/`)
+- [x] Ao deletar uma peça, excluir os arquivos de foto referenciados
 - [x] Ao deletar uma máquina, já exclui todas as fotos de todas as peças junto
 
 ### Telas e Componentes
-- [ ] **`PartListScreen`** (dentro de `MachineDetailScreen` ou tela separada)
+- [x] **`PartListScreen`** (dentro de `MachineDetailScreen` ou tela separada)
   - Lista de peças da máquina com `FlatList`
   - Empty state: "Nenhuma peça cadastrada para esta máquina"
   - Botão FAB "+" para adicionar peça
-- [ ] **`PartCard`**
+- [x] **`PartCard`**
   - Thumbnail da primeira foto da peça
   - Nome, Quantidade, Peso
   - Opções de editar e excluir
-- [ ] **`PartFormScreen`** (criação e edição)
-  - Campos: Nome (obrigatório), Quantidade (inteiro, default 0), Peso (decimal, default 0.00)
+- [x] **`PartFormScreen`** (criação e edição)
+  - Campos: Nome (obrigatório), Quantidade (inteiro, default 1), Peso (decimal, default 0.00)
+  - Exibição de mensagens de erro abaixo de cada campo obrigatório quando vazio ou inválido
   - Seção de fotos com miniaturas e botão para adicionar (câmera ou galeria)
   - Validação básica: quantidade não negativa, peso não negativo
   - Botão "Salvar Peça" e cancelar
 
 ### Navegação
-- [ ] Adicionar `PartForm` no Stack Navigator
+- [x] Adicionar `PartForm` no Stack Navigator
 
 ---
 

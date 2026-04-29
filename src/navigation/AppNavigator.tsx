@@ -4,11 +4,13 @@ import { theme } from '../theme';
 import { MachineListScreen } from '../screens/MachineListScreen';
 import { MachineDetailScreen } from '../screens/MachineDetailScreen';
 import { MachineFormScreen } from '../screens/MachineFormScreen';
+import { PartFormScreen } from '../screens/PartFormScreen';
 
 export type RootStackParamList = {
   MachineList: undefined;
   MachineDetail: { machineId: number };
   MachineForm: { machineId?: number } | undefined;
+  PartForm: { machineId: number; partId?: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -40,6 +42,14 @@ export function AppNavigator() {
         component={MachineFormScreen}
         options={({ route }) => ({
           title: route.params?.machineId ? 'Editar Máquina' : 'Nova Máquina',
+          headerTitleStyle: { color: theme.colors.text, fontWeight: 'bold' },
+        })}
+      />
+      <Stack.Screen
+        name="PartForm"
+        component={PartFormScreen}
+        options={({ route }) => ({
+          title: route.params?.partId ? 'Editar Peça' : 'Nova Peça',
           headerTitleStyle: { color: theme.colors.text, fontWeight: 'bold' },
         })}
       />

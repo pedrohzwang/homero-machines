@@ -8,7 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, HelperText } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -29,6 +29,7 @@ export function MachineFormScreen({ navigation, route }: Props) {
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{name: string}>({ name: '' });
 
   useEffect(() => {
     if (machineId) {
@@ -60,7 +61,7 @@ export function MachineFormScreen({ navigation, route }: Props) {
       const savedUri = await savePhoto(uri);
       setPhotos((prev) => [...prev, savedUri]);
     } catch (e) {
-      Alert.alert('Erro', 'Não foi possível salvar a foto. Tente novamente.');
+      console.error(e); Alert.alert('Erro', 'Não foi possível salvar a foto. Tente novamente.');
     }
   };
 
@@ -71,8 +72,17 @@ export function MachineFormScreen({ navigation, route }: Props) {
   };
 
   const handleSave = () => {
+    let hasError = false;
+    const newErrors = { name: '' };
+
     if (!name.trim()) {
-      Alert.alert('Erro', 'O nome da máquina é obrigatório.');
+      newErrors.name = 'O nome da máquina é obrigatório.';
+      hasError = true;
+    }
+
+    setErrors(newErrors);
+
+    if (hasError) {
       return;
     }
 
@@ -127,11 +137,17 @@ export function MachineFormScreen({ navigation, route }: Props) {
       <Text style={styles.fieldLabel}>Nome da máquina *</Text>
       <TextInput
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+          if (errors.name) setErrors({ name: '' });
+        }}
         placeholder="Nome da máquina"
         placeholderTextColor={theme.colors.placeholder}
-        style={styles.input}
+        style={[styles.input, errors.name ? styles.inputError : null, { marginBottom: errors.name ? 0 : theme.spacing.lg }]}
       />
+      <HelperText type="error" visible={!!errors.name} style={styles.helperText}>
+        {errors.name}
+      </HelperText>
 
       <Text style={styles.fieldLabel}>Descrição</Text>
       <TextInput
@@ -213,9 +229,17 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     fontSize: theme.fontSize.md,
     color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+  },
+  inputError: {
+    borderColor: theme.colors.danger,
+  },
+  helperText: {
+    paddingHorizontal: 0,
+    marginTop: 0,
+    marginBottom: theme.spacing.sm,
   },
   textArea: {
+    marginBottom: theme.spacing.lg,
     minHeight: 100,
   },
   saveButton: {

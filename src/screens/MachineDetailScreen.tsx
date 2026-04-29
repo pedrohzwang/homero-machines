@@ -4,16 +4,17 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Image,
   TouchableOpacity,
 } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, FAB } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useMachineStore } from '../store/useMachineStore';
 import { ImageCarousel } from '../components/ImageCarousel';
+import { PartCard } from '../components/PartCard';
+import { deletePhotos } from '../utils/fileSystem';
 import { theme } from '../theme';
 import type { Machine } from '../types';
 
@@ -21,7 +22,7 @@ type Props = StackScreenProps<RootStackParamList, 'MachineDetail'>;
 
 export function MachineDetailScreen({ navigation, route }: Props) {
   const { machineId } = route.params;
-  const { getMachine, removeMachine } = useMachineStore();
+  const { getMachine, removeMachine, updateMachine } = useMachineStore();
   const [machine, setMachine] = useState<Machine | null>(null);
 
   useFocusEffect(
@@ -95,78 +96,62 @@ export function MachineDetailScreen({ navigation, route }: Props) {
     );
   };
 
+  const handleEditPart = (partId: string) => {
+    navigation.navigate('PartForm', { machineId: machine.id, partId });
+  };
+
+  const handleDeletePart = async (partId: string) => {
+    const part = machine.parts.find((p) => p.id === partId);
+    if (!part) return;
+
+    if (part.photos.length > 0) {
+      await deletePhotos(part.photos);
+    }
+    
+    const newParts = machine.parts.filter((p) => p.id !== partId);
+    updateMachine(machine.id, { parts: newParts });
+  };
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      {/* Photo carousel */}
-      <ImageCarousel photos={machine.photos} height={220} />
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Photo carousel */}
+        <ImageCarousel photos={machine.photos} height={220} />
 
-      {/* Description */}
-      {machine.description ? (
-        <Text style={styles.description}>{machine.description}</Text>
-      ) : null}
+        {/* Description */}
+        {machine.description ? (
+          <Text style={styles.description}>{machine.description}</Text>
+        ) : null}
 
-      {/* Parts section */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionDivider} />
-        <Text style={styles.sectionTitle}>PEÇAS E REQUISITOS</Text>
-        <View style={styles.sectionDivider} />
-      </View>
+        {/* Parts section */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionDivider} />
+          <Text style={styles.sectionTitle}>PEÇAS E REQUISITOS</Text>
+          <View style={styles.sectionDivider} />
+        </View>
 
-      {machine.parts.length === 0 ? (
-        <Text style={styles.emptyParts}>
-          Nenhuma peça cadastrada para esta máquina.
-        </Text>
-      ) : (
-        machine.parts.map((part) => (
-          <View key={part.id} style={styles.partCard}>
-            {part.photos.length > 0 ? (
-              <Image
-                source={{ uri: part.photos[0] }}
-                style={styles.partThumb}
-              />
-            ) : (
-              <View style={[styles.partThumb, styles.partThumbPlaceholder]}>
-                <MaterialCommunityIcons
-                  name="cog-outline"
-                  size={24}
-                  color={theme.colors.textMuted}
-                />
-              </View>
-            )}
-            <View style={styles.partInfo}>
-              <Text style={styles.partName}>{part.name}</Text>
-              <View style={styles.partBadges}>
-                <View style={styles.partBadge}>
-                  <Text style={styles.partBadgeText}>
-                    Qtd: {part.quantity}
-                  </Text>
-                </View>
-                <View style={styles.partBadge}>
-                  <Text style={styles.partBadgeText}>
-                    {part.weight.toFixed(2)} kg
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.partActions}>
-              <MaterialCommunityIcons
-                name="pencil-outline"
-                size={20}
-                color={theme.colors.primary}
-              />
-              <MaterialCommunityIcons
-                name="trash-can-outline"
-                size={20}
-                color={theme.colors.danger}
-              />
-            </View>
-          </View>
-        ))
-      )}
-    </ScrollView>
+        {machine.parts.length === 0 ? (
+          <Text style={styles.emptyParts}>
+            Nenhuma peça cadastrada para esta máquina.
+          </Text>
+        ) : (
+          machine.parts.map((part) => (
+            <PartCard
+              key={part.id}
+              part={part}
+              onEdit={handleEditPart}
+              onDelete={handleDeletePart}
+            />
+          ))
+        )}
+      </ScrollView>
+
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        onPress={() => navigation.navigate('PartForm', { machineId: machine.id })}
+      />
+    </View>
   );
 }
 
@@ -223,54 +208,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: theme.spacing.md,
   },
-  partCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-  },
-  partThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.borderRadius.sm,
-  },
-  partThumbPlaceholder: {
-    backgroundColor: theme.colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  partInfo: {
-    flex: 1,
-    marginLeft: theme.spacing.md,
-  },
-  partName: {
-    fontSize: theme.fontSize.md,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  partBadges: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-  },
-  partBadge: {
-    backgroundColor: theme.colors.surfaceLight,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  partBadgeText: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.textSecondary,
-  },
-  partActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary,
   },
 });
