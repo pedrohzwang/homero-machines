@@ -110,6 +110,7 @@ export function MachineDetailScreen({ navigation, route }: Props) {
     
     const newParts = machine.parts.filter((p) => p.id !== partId);
     updateMachine(machine.id, { parts: newParts });
+    setMachine((prev) => prev ? { ...prev, parts: newParts } : prev);
   };
 
   return (

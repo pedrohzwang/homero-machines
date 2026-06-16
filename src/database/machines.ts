@@ -7,6 +7,7 @@ type MachineRow = {
   description: string | null;
   photos: string;
   parts: string;
+  tags: string;
   created_at: string;
   updated_at: string;
 };
@@ -18,6 +19,7 @@ function rowToMachine(row: MachineRow): Machine {
     description: row.description ?? undefined,
     photos: JSON.parse(row.photos) as string[],
     parts: JSON.parse(row.parts) as Part[],
+    tags: row.tags ? (JSON.parse(row.tags) as string[]) : [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -43,15 +45,17 @@ export function insertMachine(data: {
   description?: string;
   photos?: string[];
   parts?: Part[];
+  tags?: string[];
 }): number {
   const result = db.runSync(
-    `INSERT INTO machines (name, description, photos, parts)
-     VALUES (?, ?, ?, ?)`,
+    `INSERT INTO machines (name, description, photos, parts, tags)
+     VALUES (?, ?, ?, ?, ?)`,
     [
       data.name,
       data.description ?? null,
       JSON.stringify(data.photos ?? []),
       JSON.stringify(data.parts ?? []),
+      JSON.stringify(data.tags ?? []),
     ]
   );
   return result.lastInsertRowId;
@@ -64,6 +68,7 @@ export function updateMachine(
     description?: string;
     photos?: string[];
     parts?: Part[];
+    tags?: string[];
   }
 ): void {
   const fields: string[] = [];
@@ -84,6 +89,10 @@ export function updateMachine(
   if (data.parts !== undefined) {
     fields.push('parts = ?');
     values.push(JSON.stringify(data.parts));
+  }
+  if (data.tags !== undefined) {
+    fields.push('tags = ?');
+    values.push(JSON.stringify(data.tags));
   }
 
   if (fields.length === 0) return;

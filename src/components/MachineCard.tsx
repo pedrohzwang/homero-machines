@@ -37,11 +37,15 @@ export function MachineCard({ machine, onPress }: MachineCardProps) {
             {machine.description}
           </Text>
         ) : null}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {machine.parts.length} peça{machine.parts.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
+        {machine.tags && machine.tags.length > 0 ? (
+          <View style={styles.tagsRow}>
+            {machine.tags.slice(0, 5).map((tag, i) => (
+              <View key={i} style={styles.tagPill}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
       <MaterialCommunityIcons
         name="chevron-right"
@@ -89,18 +93,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: theme.colors.badgeBackground,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 2,
-    marginTop: theme.spacing.sm,
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 4,
   },
-  badgeText: {
+  tagPill: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tagText: {
     fontSize: theme.fontSize.xs,
-    fontWeight: 'bold',
-    color: theme.colors.badgeText,
+    color: theme.colors.textOnPrimary,
+    fontWeight: '600',
   },
   chevron: {
     marginLeft: theme.spacing.sm,

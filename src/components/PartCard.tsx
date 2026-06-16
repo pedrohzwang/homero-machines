@@ -24,7 +24,7 @@ export function PartCard({ part, onEdit, onDelete }: PartCardProps) {
   };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => onEdit(part.id)} activeOpacity={0.75}>
       <View style={styles.contentRow}>
         {part.photos.length > 0 ? (
           <Image source={{ uri: part.photos[0] }} style={styles.thumb} />
@@ -45,16 +45,22 @@ export function PartCard({ part, onEdit, onDelete }: PartCardProps) {
             Qtd: {part.quantity} | Peso: {part.weight.toFixed(2)}kg
           </Text>
         </View>
-        <View style={styles.actions}>
-          <TouchableOpacity onPress={() => onEdit(part.id)} style={styles.btn}>
-            <MaterialCommunityIcons name="pencil-outline" size={22} color={theme.colors.primary} />
-          </TouchableOpacity>
+        <View style={styles.actions} onStartShouldSetResponder={() => true}>
           <TouchableOpacity onPress={handleDelete} style={styles.btn}>
             <MaterialCommunityIcons name="trash-can-outline" size={22} color={theme.colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+      {part.tags && part.tags.length > 0 ? (
+        <View style={styles.tagsRow}>
+          {part.tags.slice(0, 5).map((tag, i) => (
+            <View key={i} style={styles.tagPill}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </TouchableOpacity>
   );
 }
 
@@ -103,5 +109,22 @@ const styles = StyleSheet.create({
   btn: {
     padding: theme.spacing.sm,
     marginLeft: theme.spacing.xs,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: theme.spacing.sm,
+  },
+  tagPill: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tagText: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.textOnPrimary,
+    fontWeight: '600',
   },
 });

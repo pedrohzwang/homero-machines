@@ -18,6 +18,7 @@ type MachineStore = {
     name: string;
     description?: string;
     photos?: string[];
+    tags?: string[];
   }) => number;
   updateMachine: (
     id: number,
@@ -26,6 +27,7 @@ type MachineStore = {
       description?: string;
       photos?: string[];
       parts?: Part[];
+      tags?: string[];
     }
   ) => void;
   removeMachine: (id: number) => Promise<void>;

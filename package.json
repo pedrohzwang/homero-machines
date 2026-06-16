@@ -1,12 +1,14 @@
 {
-  "name": "homero-machine",
+  "name": "maquinado",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "android:device": "expo run:android --device",
+    "android:emulator": "expo run:android"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.15.9",
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "@types/uuid": "^10.0.0",
+    "cross-env": "^10.1.0",
     "typescript": "~5.9.2"
   },
   "private": true

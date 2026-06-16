@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { Text, HelperText } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -16,7 +16,7 @@ import { useMachineStore } from '../store/useMachineStore';
 import { ImagePickerButton } from '../components/ImagePickerButton';
 import { savePhoto, deletePhoto } from '../utils/fileSystem';
 import { theme } from '../theme';
-import type { Part } from '../types';
+import type { Part, Machine } from '../types';
 
 const formatWeight = (text: string) => {
   const digits = text.replace(/\D/g, '');
@@ -40,7 +40,11 @@ export function PartFormScreen({ navigation, route }: Props) {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1'); // default to 1
   const [weight, setWeight] = useState('0,00');
+  const [power, setPower] = useState('0');
+  const [voltage, setVoltage] = useState('0');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   
   // Validation errors state
   const [errors, setErrors] = useState({ name: '', quantity: '', weight: '' });
@@ -59,7 +63,10 @@ export function PartFormScreen({ navigation, route }: Props) {
         setName(part.name);
         setQuantity(String(part.quantity));
         setWeight(formatWeight(part.weight.toFixed(2)));
+        setPower(String(part.power ?? 0));
+        setVoltage(String(part.voltage ?? 0));
         setPhotos(part.photos);
+        setTags(part.tags ?? []);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +84,7 @@ export function PartFormScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, name, quantity, weight, photos, saving]);
+  }, [navigation, name, quantity, weight, power, voltage, photos, tags, saving]);
 
   const handleAddPhoto = async (uri: string) => {
     try {
@@ -92,6 +99,27 @@ export function PartFormScreen({ navigation, route }: Props) {
     const uri = photos[index];
     await deletePhoto(uri);
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim();
+    if (!trimmed) return;
+    setTags((prev) => [...prev, trimmed]);
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (index: number) => {
+    setTags((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveTag = (index: number, direction: 'up' | 'down') => {
+    setTags((prev) => {
+      const next = [...prev];
+      const swapIndex = direction === 'up' ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex >= next.length) return prev;
+      [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+      return next;
+    });
   };
 
   const handleSave = () => {
@@ -136,7 +164,10 @@ export function PartFormScreen({ navigation, route }: Props) {
         name: name.trim(),
         quantity: parsedQuantity,
         weight: parsedWeight,
+        power: parseInt(power, 10) || 0,
+        voltage: parseInt(voltage, 10) || 0,
         photos,
+        tags,
       };
 
       if (isEditing && partId) {
@@ -162,61 +193,7 @@ export function PartFormScreen({ navigation, route }: Props) {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.fieldLabel}>Nome da Peça *</Text>
-      <TextInput
-        value={name}
-        onChangeText={(text) => {
-          setName(text);
-          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
-        }}
-        placeholder="Nome da Peça"
-        placeholderTextColor={theme.colors.placeholder}
-        style={[styles.input, errors.name ? styles.inputError : null]}
-        maxLength={100}
-      />
-      <HelperText type="error" visible={!!errors.name} style={styles.helperText}>
-        {errors.name}
-      </HelperText>
-
-      <View style={styles.row}>
-        <View style={[styles.flexArea, { marginRight: theme.spacing.sm }]}>
-          <Text style={styles.fieldLabel}>Quantidade *</Text>
-          <TextInput
-            value={quantity}
-            onChangeText={(text) => {
-              setQuantity(text.replace(/[^0-9]/g, ''));
-              if (errors.quantity) setErrors((prev) => ({ ...prev, quantity: '' }));
-            }}
-            placeholder="Quantidade"
-            placeholderTextColor={theme.colors.placeholder}
-            keyboardType="numeric"
-            style={[styles.input, errors.quantity ? styles.inputError : null]}
-          />
-          <HelperText type="error" visible={!!errors.quantity} style={styles.helperText}>
-            {errors.quantity}
-          </HelperText>
-        </View>
-
-        <View style={[styles.flexArea, { marginLeft: theme.spacing.sm }]}>
-          <Text style={styles.fieldLabel}>Peso (kg) *</Text>
-          <TextInput
-            value={weight}
-            onChangeText={(text) => {
-              setWeight(formatWeight(text));
-              if (errors.weight) setErrors((prev) => ({ ...prev, weight: '' }));
-            }}
-            placeholder="0,00"
-            placeholderTextColor={theme.colors.placeholder}
-            keyboardType="numeric"
-            style={[styles.input, errors.weight ? styles.inputError : null]}
-          />
-          <HelperText type="error" visible={!!errors.weight} style={styles.helperText}>
-            {errors.weight}
-          </HelperText>
-        </View>
-      </View>
-
-      <Text style={styles.sectionLabel}>FOTOS DA PEÇA</Text>
+      <Text style={styles.sectionLabel}>Fotos da peça</Text>
       <View style={styles.photosRow}>
         {photos.map((uri, index) => (
           <View key={uri} style={styles.photoWrapper}>
@@ -235,6 +212,131 @@ export function PartFormScreen({ navigation, route }: Props) {
         ))}
         <ImagePickerButton onImagePicked={handleAddPhoto} />
       </View>
+
+      <Text style={styles.fieldLabel}>Nome da peça *</Text>
+      <TextInput
+        value={name}
+        onChangeText={(text) => {
+          setName(text);
+          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+        }}
+        placeholder="Nome da peça"
+        placeholderTextColor={theme.colors.placeholder}
+        style={[styles.input, errors.name ? styles.inputError : null]}
+        maxLength={100}
+      />
+      {!!errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+
+      <View style={styles.row}>
+        <View style={[styles.flexArea, { marginRight: theme.spacing.sm }]}>
+          <Text style={styles.fieldLabel}>Potência (W)</Text>
+          <TextInput
+            value={power}
+            onChangeText={(text) => setPower(text.replace(/[^0-9]/g, '').slice(0, 8))}
+            placeholder="0"
+            placeholderTextColor={theme.colors.placeholder}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+        </View>
+        <View style={[styles.flexArea, { marginLeft: theme.spacing.sm }]}>
+          <Text style={styles.fieldLabel}>Tensão (V)</Text>
+          <TextInput
+            value={voltage}
+            onChangeText={(text) => setVoltage(text.replace(/[^0-9]/g, '').slice(0, 8))}
+            placeholder="0"
+            placeholderTextColor={theme.colors.placeholder}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.flexArea, { marginRight: theme.spacing.sm }]}>
+          <Text style={styles.fieldLabel}>Quantidade</Text>
+          <TextInput
+            value={quantity}
+            onChangeText={(text) => {
+              setQuantity(text.replace(/[^0-9]/g, ''));
+              if (errors.quantity) setErrors((prev) => ({ ...prev, quantity: '' }));
+            }}
+            placeholder="Quantidade"
+            placeholderTextColor={theme.colors.placeholder}
+            keyboardType="numeric"
+            style={[styles.input, errors.quantity ? styles.inputError : null]}
+          />
+          {!!errors.quantity && <Text style={styles.errorText}>{errors.quantity}</Text>}
+        </View>
+
+        <View style={[styles.flexArea, { marginLeft: theme.spacing.sm }]}>
+          <Text style={styles.fieldLabel}>Peso (kg)</Text>
+          <TextInput
+            value={weight}
+            onChangeText={(text) => {
+              setWeight(formatWeight(text));
+              if (errors.weight) setErrors((prev) => ({ ...prev, weight: '' }));
+            }}
+            placeholder="0,00"
+            placeholderTextColor={theme.colors.placeholder}
+            keyboardType="numeric"
+            style={[styles.input, errors.weight ? styles.inputError : null]}
+          />
+          {!!errors.weight && <Text style={styles.errorText}>{errors.weight}</Text>}
+        </View>
+      </View>
+
+      {/* Tags section */}
+      <Text style={[styles.sectionLabel, { marginTop: 6 }]}>Tags</Text>
+      <View style={styles.tagInputRow}>
+        <TextInput
+          value={tagInput}
+          onChangeText={setTagInput}
+          placeholder="Nova tag..."
+          placeholderTextColor={theme.colors.placeholder}
+          style={[styles.input, styles.tagInput]}
+          maxLength={20}
+          onSubmitEditing={handleAddTag}
+          returnKeyType="done"
+        />
+        <TouchableOpacity style={styles.tagAddBtn} onPress={handleAddTag}>
+          <MaterialCommunityIcons name="plus" size={22} color={theme.colors.textOnPrimary} />
+        </TouchableOpacity>
+      </View>
+      {tags.map((tag, index) => (
+        <View key={`${tag}-${index}`} style={styles.tagRow}>
+          <View style={styles.tagPill}>
+            <Text style={styles.tagPillText}>{tag}</Text>
+          </View>
+          <View style={styles.tagRowActions}>
+            <TouchableOpacity
+              onPress={() => handleMoveTag(index, 'up')}
+              disabled={index === 0}
+              style={styles.tagMoveBtn}
+            >
+              <MaterialCommunityIcons
+                name="chevron-up"
+                size={20}
+                color={index === 0 ? theme.colors.textMuted : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleMoveTag(index, 'down')}
+              disabled={index === tags.length - 1}
+              style={styles.tagMoveBtn}
+            >
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={20}
+                color={index === tags.length - 1 ? theme.colors.textMuted : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleRemoveTag(index)} style={styles.tagMoveBtn}>
+              <MaterialCommunityIcons name="close-circle" size={20} color={theme.colors.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -245,8 +347,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   content: {
-    padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl * 2,
+    padding: theme.spacing.sm,
+    paddingBottom: theme.spacing.xxl,
   },
   headerSaveText: {
     color: theme.colors.primary,
@@ -256,25 +358,27 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 2,
+    marginTop: 8,
   },
   input: {
     backgroundColor: theme.colors.inputBackground,
     borderWidth: 1,
     borderColor: theme.colors.inputBorder,
     borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
     fontSize: theme.fontSize.md,
     color: theme.colors.text,
   },
   inputError: {
     borderColor: theme.colors.danger,
   },
-  helperText: {
-    paddingHorizontal: 0,
-    marginTop: 0,
-    marginBottom: theme.spacing.sm,
+  errorText: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.danger,
+    marginTop: 2,
+    marginBottom: 2,
   },
   row: {
     flexDirection: 'row',
@@ -285,15 +389,16 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: theme.fontSize.sm,
-    fontWeight: 'bold',
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.lg,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    marginBottom: 2,
+    marginTop: 8,
   },
   photosRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
+    marginBottom: 6,
   },
   photoWrapper: {
     position: 'relative',
@@ -310,5 +415,48 @@ const styles = StyleSheet.create({
     right: -8,
     backgroundColor: theme.colors.card,
     borderRadius: 12,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: 4,
+  },
+  tagInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  tagAddBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tagPill: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  tagPillText: {
+    color: theme.colors.textOnPrimary,
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+  },
+  tagRowActions: {
+    flexDirection: 'row',
+    marginLeft: theme.spacing.sm,
+  },
+  tagMoveBtn: {
+    padding: theme.spacing.xs,
   },
 });

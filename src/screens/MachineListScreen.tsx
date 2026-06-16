@@ -40,11 +40,6 @@ export function MachineListScreen({ navigation }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Minhas Máquinas</Text>
-        <MaterialCommunityIcons
-          name="cog-outline"
-          size={24}
-          color={theme.colors.textSecondary}
-        />
       </View>
 
       {/* Search */}
@@ -85,7 +80,7 @@ export function MachineListScreen({ navigation }: Props) {
       />
 
       {/* FAB */}
-      <View style={[styles.fabContainer, { bottom: insets.bottom + 16 }]}>
+      <View style={[styles.fabContainer, { bottom: Math.max(insets.bottom + 16, 48) }]}>
         <MaterialCommunityIcons.Button
           name="plus"
           size={28}

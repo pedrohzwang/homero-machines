@@ -8,7 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { Text, HelperText } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -28,6 +28,8 @@ export function MachineFormScreen({ navigation, route }: Props) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{name: string}>({ name: '' });
 
@@ -38,6 +40,7 @@ export function MachineFormScreen({ navigation, route }: Props) {
         setName(machine.name);
         setDescription(machine.description ?? '');
         setPhotos([...machine.photos]);
+        setTags([...(machine.tags ?? [])]);
       }
     }
   }, [machineId, getMachine]);
@@ -54,7 +57,7 @@ export function MachineFormScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, name, description, photos, saving]);
+  }, [navigation, name, description, photos, tags, saving]);
 
   const handleAddPhoto = async (uri: string) => {
     try {
@@ -69,6 +72,27 @@ export function MachineFormScreen({ navigation, route }: Props) {
     const uri = photos[index];
     await deletePhoto(uri);
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim();
+    if (!trimmed) return;
+    setTags((prev) => [...prev, trimmed]);
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (index: number) => {
+    setTags((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveTag = (index: number, direction: 'up' | 'down') => {
+    setTags((prev) => {
+      const next = [...prev];
+      const swapIndex = direction === 'up' ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex >= next.length) return prev;
+      [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+      return next;
+    });
   };
 
   const handleSave = () => {
@@ -93,12 +117,14 @@ export function MachineFormScreen({ navigation, route }: Props) {
           name: name.trim(),
           description: description.trim() || undefined,
           photos,
+          tags,
         });
       } else {
         addMachine({
           name: name.trim(),
           description: description.trim() || undefined,
           photos,
+          tags,
         });
       }
       navigation.goBack();
@@ -113,7 +139,7 @@ export function MachineFormScreen({ navigation, route }: Props) {
       contentContainerStyle={styles.content}
     >
       {/* Photos section */}
-      <Text style={styles.sectionLabel}>FOTOS DA MÁQUINA</Text>
+      <Text style={styles.sectionLabel}>Fotos da máquina</Text>
       <View style={styles.photosRow}>
         {photos.map((uri, index) => (
           <View key={uri} style={styles.photoWrapper}>
@@ -143,11 +169,9 @@ export function MachineFormScreen({ navigation, route }: Props) {
         }}
         placeholder="Nome da máquina"
         placeholderTextColor={theme.colors.placeholder}
-        style={[styles.input, errors.name ? styles.inputError : null, { marginBottom: errors.name ? 0 : theme.spacing.lg }]}
+        style={[styles.input, errors.name ? styles.inputError : null]}
       />
-      <HelperText type="error" visible={!!errors.name} style={styles.helperText}>
-        {errors.name}
-      </HelperText>
+      {!!errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
       <Text style={styles.fieldLabel}>Descrição</Text>
       <TextInput
@@ -161,17 +185,58 @@ export function MachineFormScreen({ navigation, route }: Props) {
         textAlignVertical="top"
       />
 
-      {/* Save button */}
-      <TouchableOpacity
-        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-        onPress={handleSave}
-        disabled={saving}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.saveButtonText}>
-          {saving ? 'SALVANDO...' : 'SALVAR MÁQUINA'}
-        </Text>
-      </TouchableOpacity>
+      {/* Tags section */}
+      <Text style={styles.sectionLabel}>Tags</Text>
+      <View style={styles.tagInputRow}>
+        <TextInput
+          value={tagInput}
+          onChangeText={setTagInput}
+          placeholder="Nova tag..."
+          placeholderTextColor={theme.colors.placeholder}
+          style={[styles.input, styles.tagInput]}
+          maxLength={20}
+          onSubmitEditing={handleAddTag}
+          returnKeyType="done"
+        />
+        <TouchableOpacity style={styles.tagAddBtn} onPress={handleAddTag}>
+          <MaterialCommunityIcons name="plus" size={22} color={theme.colors.textOnPrimary} />
+        </TouchableOpacity>
+      </View>
+      {tags.map((tag, index) => (
+        <View key={`${tag}-${index}`} style={styles.tagRow}>
+          <View style={styles.tagPill}>
+            <Text style={styles.tagPillText}>{tag}</Text>
+          </View>
+          <View style={styles.tagRowActions}>
+            <TouchableOpacity
+              onPress={() => handleMoveTag(index, 'up')}
+              disabled={index === 0}
+              style={styles.tagMoveBtn}
+            >
+              <MaterialCommunityIcons
+                name="chevron-up"
+                size={20}
+                color={index === 0 ? theme.colors.textMuted : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleMoveTag(index, 'down')}
+              disabled={index === tags.length - 1}
+              style={styles.tagMoveBtn}
+            >
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={20}
+                color={index === tags.length - 1 ? theme.colors.textMuted : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleRemoveTag(index)} style={styles.tagMoveBtn}>
+              <MaterialCommunityIcons name="close-circle" size={20} color={theme.colors.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
+
     </ScrollView>
   );
 }
@@ -182,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.sm,
   },
   headerSaveText: {
     color: theme.colors.primary,
@@ -190,17 +255,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionLabel: {
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
     fontWeight: '600',
-    letterSpacing: 1,
-    marginBottom: theme.spacing.md,
+    marginTop: 8,
+    marginBottom: 2,
   },
   photosRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xxl,
+    marginBottom: 6,
   },
   photoWrapper: {
     position: 'relative',
@@ -218,44 +283,73 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 2,
+    marginTop: 8,
   },
   input: {
     backgroundColor: theme.colors.inputBackground,
     borderWidth: 1,
     borderColor: theme.colors.inputBorder,
     borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
     fontSize: theme.fontSize.md,
     color: theme.colors.text,
   },
   inputError: {
     borderColor: theme.colors.danger,
   },
-  helperText: {
-    paddingHorizontal: 0,
-    marginTop: 0,
-    marginBottom: theme.spacing.sm,
+  errorText: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.danger,
+    marginTop: 2,
+    marginBottom: 2,
   },
   textArea: {
-    marginBottom: theme.spacing.lg,
-    minHeight: 100,
+    marginBottom: 0,
+    minHeight: 80,
   },
-  saveButton: {
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: 4,
+  },
+  tagInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  tagAddBtn: {
     backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.md,
-    paddingVertical: theme.spacing.lg,
+    width: 38,
+    height: 38,
     alignItems: 'center',
-    marginTop: theme.spacing.md,
+    justifyContent: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  saveButtonText: {
+  tagPill: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  tagPillText: {
     color: theme.colors.textOnPrimary,
-    fontSize: theme.fontSize.lg,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+  },
+  tagRowActions: {
+    flexDirection: 'row',
+    marginLeft: theme.spacing.sm,
+  },
+  tagMoveBtn: {
+    padding: theme.spacing.xs,
   },
 });
